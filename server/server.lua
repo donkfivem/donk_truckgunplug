@@ -72,7 +72,7 @@ end
 local function isPlayerWhitelisted(target)
     print('[DEBUG] isPlayerWhitelisted called for target: ' .. tostring(target))
     if (Config.Whitelisted.Type == 'donk_api') then
-        local has_permission = exports['donk_api']:isVipOfType(target, {'gunplug'})
+        local has_permission = exports['donk_api']:validatePremiumAccess(target, {'gunplug'})
         print('[DEBUG] Permission check for gunplug: ' .. tostring(has_permission))
         if has_permission then
             return true

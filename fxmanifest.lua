@@ -1,7 +1,10 @@
 fx_version 'cerulean'
 games { 'gta5' }
-author 'donk'
 lua54 'yes'
+
+author 'donk'
+description 'Gun Plug Script for Voodoo Garbage Truck'
+version '1.0.0'
 
 client_scripts {'client/client.lua', 'config.lua',}
 

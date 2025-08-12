@@ -1,14 +1,12 @@
 Config = {}
-
-Config.VehicleModel = 'garbagedoo'
-
+Config.VehicleModel = 'garbagedoo' -- DONT CHANGE ONLY WORKS WITH THIS MODEL!
 Config.Rewards = {
-    Type = 'ox_inventory',
+    Type = 'ox_inventory', -- DONT CHANGE UNLESS IF YOU KNOW WHAT YOU'RE DOING!
     Rewards = { -- itemName = rewardCount
-        'WEAPON_G29',
-        'WEAPON_MGLOCK',
-        'WEAPON_TIRACG19',
-        'WEAPON_CAMOG17S',
+        'WEAPON_PISTOL',
+        -- 'WEAPON_PISTOL',
+        -- 'WEAPON_PISTOL',
+        -- 'WEAPON_PISTOL',
     }
 }
 
@@ -17,14 +15,14 @@ Config.DiscordLogs = {
     Webhook = '',
     Embed = {
         Color = 0, -- Use decimal color code
-        Username = 'Gunplug',
-        UserIcon = 'https://imgur.com/L2Z2upC.png'
+        Username = 'Donk Gunplug',
+        UserIcon = 'https://r2.fivemanage.com/oosFEgKFisbM36c2K1JXV/3b6b68ae80a6710a5a31c7872ccb68fe.png'
     }
 }
 
 Config.Whitelisted = {
     Enabled = true, -- Whitelist command access?
-    Type = 'api', -- DONT CHANGE
+    Type = 'donk_api', -- DONT CHANGE
 }
 
 Config.Cooldown = {

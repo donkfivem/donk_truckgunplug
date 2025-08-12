@@ -71,7 +71,7 @@ end
 
 local function isPlayerWhitelisted(target)
     print('[DEBUG] isPlayerWhitelisted called for target: ' .. tostring(target))
-    if (Config.Whitelisted.Type == 'api') then
+    if (Config.Whitelisted.Type == 'donk_api') then
         local has_permission = exports['donk_api']:isVipOfType(target, {'gunplug'})
         print('[DEBUG] Permission check for gunplug: ' .. tostring(has_permission))
         if has_permission then
@@ -89,34 +89,29 @@ end
 local function getPlayerItemCount(source)
     local identifier = getIdentifiers(source)[Config.Cooldown.Identifier]
     print('[DEBUG] getPlayerItemCount for identifier: ' .. tostring(identifier))
-    if Config.Cooldown.Type == 1 then -- MySQL
-        local result = MySQL.Sync.fetchAll('SELECT item_count FROM gunplug WHERE identifier = @identifier', {
-            ['@identifier'] = identifier
-        })
-        if result and result[1] then
-            print('[DEBUG] MySQL item count: ' .. result[1].item_count)
-            return result[1].item_count or 30
-        end
-        print('[DEBUG] MySQL no item count, defaulting to 30')
-        return 30
+    local result = MySQL.Sync.fetchAll('SELECT item_count FROM gunplug WHERE identifier = @identifier', {
+        ['@identifier'] = identifier
+    })
+    if result and result[1] then
+        print('[DEBUG] MySQL item count: ' .. result[1].item_count)
+        return result[1].item_count or 30
     end
+    print('[DEBUG] MySQL no item count, defaulting to 30')
     return 30
 end
 
 local function updatePlayerItemCount(source, newCount)
     local identifier = getIdentifiers(source)[Config.Cooldown.Identifier]
     print('[DEBUG] updatePlayerItemCount for identifier: ' .. tostring(identifier) .. ', newCount: ' .. newCount)
-    if Config.Cooldown.Type == 1 then
-        local affectedRows = MySQL.Sync.execute('UPDATE gunplug SET item_count = @item_count, time = @time WHERE identifier = @identifier', {
-            ['@identifier'] = identifier,
-            ['@item_count'] = newCount,
-            ['@time'] = os.time()
-        })
-        if affectedRows > 0 then
-            print('[DEBUG] MySQL updated item_count for identifier: ' .. tostring(identifier) .. ', newCount: ' .. newCount)
-        else
-            print('[DEBUG] MySQL no record found for identifier: ' .. tostring(identifier) .. ', no update performed')
-        end
+    local affectedRows = MySQL.Sync.execute('UPDATE gunplug SET item_count = @item_count, time = @time WHERE identifier = @identifier', {
+        ['@identifier'] = identifier,
+        ['@item_count'] = newCount,
+        ['@time'] = os.time()
+    })
+    if affectedRows > 0 then
+        print('[DEBUG] MySQL updated item_count for identifier: ' .. tostring(identifier) .. ', newCount: ' .. newCount)
+    else
+        print('[DEBUG] MySQL no record found for identifier: ' .. tostring(identifier) .. ', no update performed')
     end
 end
 
@@ -153,37 +148,22 @@ end
 
 local function loadCache()
     if Config.Cooldown.Enabled then
-        if Config.Cooldown.Type == 2 then -- JSON
-            local cached = LoadResourceFile(GetCurrentResourceName(), 'server/cache.json')
-            local cache = json.decode(cached)
-            if (not cache) then
-                print('^4[donk_gunplug] ^3[WARNING]^0: Config.Cooldown type is set to JSON, no json found creating now!')
-                local timeOld = os.microtime()
-                SaveResourceFile(GetCurrentResourceName(), 'server/cache.json', json.encode({}), -1)
-                local took = os.microtime() - timeOld
-                print('^4[donk_gunplug] ^2[SUCCESS]^0: JSON file created in '..took..'ms!')
-                return {}
-            else
-                return cache
-            end
-        else
-            if (not MySQL) then
-                print('^4[donk_gunplug] ^1[ERROR]^0: Config.Cooldown type is set to MySQL, but MySQL is not loaded correctly!')
-                return {}
-            end
-            local success, result = pcall(function()
-                return MySQL.Sync.fetchAll('SELECT * FROM gunplug')
-            end)
-            if (not success) then
-                print('^4[donk_gunplug] ^3[WARNING]^0: Config.Cooldown type is set to MySQL, but no table was found! Creating now!')
-                local timeOld = os.microtime()
-                MySQL.Sync.execute('CREATE TABLE IF NOT EXISTS gunplug (identifier VARCHAR(50), time INT)')
-                local took = os.microtime() - timeOld
-                print('^4[donk_gunplug] ^2[SUCCESS]^0: Database table created in '..took..'ms!')
-                return {}
-            end
-            return result
+        if (not MySQL) then
+            print('^4[donk_gunplug] ^1[ERROR]^0: Config.Cooldown type is set to MySQL, but MySQL is not loaded correctly!')
+            return {}
         end
+        local success, result = pcall(function()
+            return MySQL.Sync.fetchAll('SELECT * FROM gunplug')
+        end)
+        if (not success) then
+            print('^4[donk_gunplug] ^3[WARNING]^0: Config.Cooldown type is set to MySQL, but no table was found! Creating now!')
+            local timeOld = os.microtime()
+            MySQL.Sync.execute('CREATE TABLE IF NOT EXISTS gunplug (identifier VARCHAR(50), time INT)')
+            local took = os.microtime() - timeOld
+            print('^4[donk_gunplug] ^2[SUCCESS]^0: Database table created in '..took..'ms!')
+            return {}
+        end
+        return result
     end
 end
 
@@ -243,54 +223,49 @@ end)
 
 local function canRedeem(target)
     print('[DEBUG] canRedeem called for target: ' .. tostring(target))
-    if Config.Cooldown.Type == 1 then -- MySQL
-        local identifier = getIdentifiers(target)[Config.Cooldown.Identifier]
-        print('[DEBUG] MySQL cooldown check for identifier: ' .. tostring(identifier))
-        local result = MySQL.Sync.fetchAll('SELECT * FROM gunplug WHERE identifier = @identifier', {
-            ['@identifier'] = identifier
-        })
-        if (next(result)) then
-            local redeemed = result[1].time
-            local item_count = result[1].item_count or 0
-            local timeNow = os.time()
-            local timeDiff = timeNow - redeemed
-            local timeLeft = Config.Cooldown.Time * 86400 - timeDiff
-            local timeindays = math.floor(timeLeft / 86400)
-            print('[DEBUG] MySQL record found: item_count: ' .. item_count .. ', timeDiff: ' .. timeDiff .. ', timeLeft: ' .. timeLeft .. ', timeindays: ' .. timeindays)
-            if item_count > 0 then
-                print('[DEBUG] MySQL item_count > 0, can redeem')
+    local identifier = getIdentifiers(target)[Config.Cooldown.Identifier]
+    print('[DEBUG] MySQL cooldown check for identifier: ' .. tostring(identifier))
+    local result = MySQL.Sync.fetchAll('SELECT * FROM gunplug WHERE identifier = @identifier', {
+        ['@identifier'] = identifier
+    })
+    if (next(result)) then
+        local redeemed = result[1].time
+        local item_count = result[1].item_count or 0
+        local timeNow = os.time()
+        local timeDiff = timeNow - redeemed
+        local timeLeft = Config.Cooldown.Time * 86400 - timeDiff
+        local timeindays = math.floor(timeLeft / 86400)
+        print('[DEBUG] MySQL record found: item_count: ' .. item_count .. ', timeDiff: ' .. timeDiff .. ', timeLeft: ' .. timeLeft .. ', timeindays: ' .. timeindays)
+        if item_count > 0 then
+            print('[DEBUG] MySQL item_count > 0, can redeem')
+            return true
+        else
+            if timeDiff >= Config.Cooldown.Time * 86400 then
+                MySQL.Sync.execute('UPDATE gunplug SET item_count = @item_count, time = @time WHERE identifier = @identifier', {
+                    ['@identifier'] = identifier,
+                    ['@item_count'] = 30,
+                    ['@time'] = os.time()
+                })
+                print('[DEBUG] MySQL cooldown expired, reset item_count to 30, can redeem')
                 return true
             else
-                if timeDiff >= Config.Cooldown.Time * 86400 then
-                    MySQL.Sync.execute('UPDATE gunplug SET item_count = @item_count, time = @time WHERE identifier = @identifier', {
-                        ['@identifier'] = identifier,
-                        ['@item_count'] = 30,
-                        ['@time'] = os.time()
-                    })
-                    print('[DEBUG] MySQL cooldown expired, reset item_count to 30, can redeem')
-                    return true
-                else
-                    TriggerClientEvent('ox_lib:notify', target, {
-                        title = (Config.Strings['Cooldown'] or 'Cooldown active, {TIME_REMAINING} days left'):gsub('{TIME_REMAINING}', timeindays),
-                        type = 'error',
-                        duration = 5000
-                    })
-                    print('[DEBUG] MySQL cooldown active, cannot redeem')
-                    return false
-                end
+                TriggerClientEvent('ox_lib:notify', target, {
+                    title = (Config.Strings['Cooldown'] or 'Cooldown active, {TIME_REMAINING} days left'):gsub('{TIME_REMAINING}', timeindays),
+                    type = 'error',
+                    duration = 5000
+                })
+                print('[DEBUG] MySQL cooldown active, cannot redeem')
+                return false
             end
-        else
-            MySQL.Sync.execute('INSERT INTO gunplug (identifier, time, item_count) VALUES (@identifier, @time, @item_count)', {
-                ['@identifier'] = identifier,
-                ['@time'] = os.time(),
-                ['@item_count'] = 30
-            })
-            print('[DEBUG] MySQL no cooldown record, created with item_count = 30, can redeem')
-            return true
         end
     else
-        print('^4[donk_gunplug] ^1[ERROR]^0: Config.Cooldown type is not set correctly!')
-        return false
+        MySQL.Sync.execute('INSERT INTO gunplug (identifier, time, item_count) VALUES (@identifier, @time, @item_count)', {
+            ['@identifier'] = identifier,
+            ['@time'] = os.time(),
+            ['@item_count'] = 30
+        })
+        print('[DEBUG] MySQL no cooldown record, created with item_count = 30, can redeem')
+        return true
     end
 end
 

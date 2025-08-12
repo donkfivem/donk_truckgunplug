@@ -72,8 +72,8 @@ end
 local function isPlayerWhitelisted(target)
     print('[DEBUG] isPlayerWhitelisted called for target: ' .. tostring(target))
     if (Config.Whitelisted.Type == 'api') then
-        local has_permission = exports['qbx_smallresources']:isVipOfType(target, {'gunplug'})
-        print('[DEBUG] QBCore permission check for gunplug: ' .. tostring(has_permission))
+        local has_permission = exports['donk_api']:isVipOfType(target, {'gunplug'})
+        print('[DEBUG] Permission check for gunplug: ' .. tostring(has_permission))
         if has_permission then
             return true
         else
@@ -124,7 +124,11 @@ local function giveRewards(source)
     print('[DEBUG] giveRewards called for source: ' .. tostring(source))
     local totalItems = getPlayerItemCount(source)
     if totalItems <= 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'You have no reward items left!', 'error', 5000)
+        TriggerClientEvent('ox_lib:notify', source, {
+            title = 'You have no reward items left!',
+            type = 'error',
+            duration = 5000
+        })
         print('[DEBUG] No items left for source: ' .. source)
         return
     end
@@ -136,7 +140,11 @@ local function giveRewards(source)
     end
     print('[DEBUG] Weapons available: ' .. json.encode(weapons))
     if #weapons == 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'No weapons available!', 'error', 5000)
+        TriggerClientEvent('ox_lib:notify', source, {
+            title = 'No weapons available!',
+            type = 'error',
+            duration = 5000
+        })
         print('[DEBUG] No weapons in Config.Rewards.Rewards')
         return
     end
@@ -184,13 +192,21 @@ AddEventHandler('donk_gunplug:confirmWeaponSelection', function(weapon, quantity
     local source = source
     print('[DEBUG] confirmWeaponSelection for source: ' .. source .. ', weapon: ' .. weapon .. ', quantity: ' .. quantity)
     if not weapon or not quantity or quantity < 1 then
-        TriggerClientEvent('QBCore:Notify', source, 'Invalid selection!', 'error', 5000)
+        TriggerClientEvent('ox_lib:notify', source, {
+            title = 'Invalid selection!',
+            type = 'error',
+            duration = 5000
+        })
         print('[DEBUG] Invalid selection')
         return
     end
     local totalItems = getPlayerItemCount(source)
     if quantity > totalItems then
-        TriggerClientEvent('QBCore:Notify', source, 'Not enough reward items remaining!', 'error', 5000)
+        TriggerClientEvent('ox_lib:notify', source, {
+            title = 'Not enough reward items remaining!',
+            type = 'error',
+            duration = 5000
+        })
         print('[DEBUG] Quantity exceeds remaining items: ' .. totalItems)
         return
     end
@@ -202,19 +218,27 @@ AddEventHandler('donk_gunplug:confirmWeaponSelection', function(weapon, quantity
         end
     end
     if not isValidWeapon then
-        TriggerClientEvent('QBCore:Notify', source, 'Invalid weapon selected!', 'error', 5000)
+        TriggerClientEvent('ox_lib:notify', source, {
+            title = 'Invalid weapon selected!',
+            type = 'error',
+            duration = 5000
+        })
         print('[DEBUG] Invalid weapon: ' .. weapon)
         return
     end
     elseif Config.Rewards.Type == 'ox_inventory' then -- ox_inventory
-        exports[Config.Rewards.OX]:AddItem(source, weapon, quantity)
+        exports[Config.Rewards.Type]:AddItem(source, weapon, quantity)
         print('[DEBUG] Added ox_inventory weapon: ' .. weapon .. ', quantity: ' .. quantity .. ' to player: ' .. source)
     else
         print('^4[donk_gunplug] ^1[ERROR]^0: Config.Rewards.Type is not set correctly!')
         return
     end
     updatePlayerItemCount(source, totalItems - quantity)
-    TriggerClientEvent('QBCore:Notify', source, 'Received ' .. quantity .. 'x ' .. weapon, 'success', 5000)
+    TriggerClientEvent('ox_lib:notify', source, {
+        title = 'Received ' .. quantity .. 'x ' .. weapon,
+        type = 'success',
+        duration = 5000
+    })
 end)
 
 local function canRedeem(target)
@@ -246,7 +270,11 @@ local function canRedeem(target)
                     print('[DEBUG] MySQL cooldown expired, reset item_count to 30, can redeem')
                     return true
                 else
-                    TriggerClientEvent('QBCore:Notify', target, (Config.Strings['Cooldown'] or 'Cooldown active, {TIME_REMAINING} days left'):gsub('{TIME_REMAINING}', timeindays), 'error', 5000)
+                    TriggerClientEvent('ox_lib:notify', target, {
+                        title = (Config.Strings['Cooldown'] or 'Cooldown active, {TIME_REMAINING} days left'):gsub('{TIME_REMAINING}', timeindays),
+                        type = 'error',
+                        duration = 5000
+                    })
                     print('[DEBUG] MySQL cooldown active, cannot redeem')
                     return false
                 end
@@ -330,7 +358,11 @@ end
 
 function sendNotification(source, message)
     print('[DEBUG] sendNotification called for source: ' .. tostring(source) .. ', message: ' .. tostring(message))
-    TriggerClientEvent('QBCore:Notify', source, message, 'success', 5000)
+    TriggerClientEvent('ox_lib:notify', source, {
+        title = message,
+        type = 'success',
+        duration = 5000
+    })
 end
 
 RegisterNetEvent('donk_gunplug:giveTrunkRewards')
@@ -364,7 +396,7 @@ CreateThread(function()
     local timeOld = os.microtime()
     if (Config.Rewards.Type == 'ox_inventory') then
         local success, hasExport = pcall(function()
-            return exports[Config.Rewards.OX] and exports[Config.Rewards.OX].AddItem ~= nil
+            return exports[Config.Rewards.Type] and exports[Config.Rewards.Type].AddItem ~= nil
         end)
 
         if not success or not hasExport then

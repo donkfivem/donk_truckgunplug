@@ -4,7 +4,6 @@ Config.VehicleModel = 'garbagedoo'
 
 Config.Rewards = {
     Type = 'ox_inventory',
-    OX = 'ox_inventory',  -- Used for export to giveitem via inventory
     Rewards = { -- itemName = rewardCount
         'WEAPON_G29',
         'WEAPON_MGLOCK',

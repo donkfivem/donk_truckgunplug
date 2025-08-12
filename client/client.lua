@@ -40,7 +40,6 @@ Citizen.CreateThread(function()
                             distance = distance,
                             onSelect = function(data)
                                 local serverId = GetPlayerServerId(PlayerId())
-                                -- print("test")
                                 TriggerServerEvent('donk_gunplug:giveTrunkRewards', serverId)
                             end
                         }
@@ -63,7 +62,7 @@ RegisterNetEvent('donk_gunplug:openWeaponMenu')
 AddEventHandler('donk_gunplug:openWeaponMenu', function(weapons, totalItems)
     local options = {}
     for _, weapon in ipairs(weapons) do
-        local weaponLabel = QBCore and QBCore.Shared.Weapons[weapon] and QBCore.Shared.Weapons[weapon].label or weapon
+        local weaponLabel = exports.ox_inventory:Items(weapon) and exports.ox_inventory:Items(weapon).label or weapon
         table.insert(options, {
             title = weaponLabel,
             description = 'Select to choose quantity',
@@ -86,7 +85,11 @@ AddEventHandler('donk_gunplug:openWeaponMenu', function(weapons, totalItems)
                     TriggerServerEvent('donk_gunplug:confirmWeaponSelection', weapon, quantity)
                 else
                     print('[DEBUG] Quantity input cancelled')
-                    TriggerClientEvent('QBCore:Notify', -1, 'Selection cancelled', 'error', 5000)
+                    TriggerClientEvent('ox_lib:notify', -1, {
+                        title = 'Selection cancelled',
+                        type = 'error',
+                        duration = 5000
+                    })
                 end
             end
         })
